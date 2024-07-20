@@ -1,0 +1,45 @@
+version: '3.1'
+
+services:
+  db:
+    image: mongo:4.2
+    container_name: db
+    restart: always
+    ports:
+      - "${DB_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_DATABASE: "${DB_NAME}"
+      MONGO_INITDB_ROOT_USERNAME: "${DB_USER}"
+      MONGO_INITDB_ROOT_PASSWORD: "${DB_PASS}"
+    volumes:
+      - db_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongo --eval 'db.runCommand({ ping: 1 })' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api:
+    build: .
+    container_name: api
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "${PORT:-3000}:3000"
+    working_dir: /usr/src/app
+    command: >
+      sh -c "npm install && npm run start"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  db_data:
