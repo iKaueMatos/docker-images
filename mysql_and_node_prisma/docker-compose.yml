@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  api:
+    container_name: api
+    image: node:18.18-alpine
+    build:
+      context: .
+      dockerfile: dockerfile
+    restart: always
+    tty: true
+    depends_on:
+      - db
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/usr/app
+    working_dir: '/usr/app'
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE_NAME=${DB_DATABASE_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    command: >
+      sh -c "npm install &&
+      npx prisma generate &&
+      npx prisma migrate dev &&
+      npm run start:dev --watch"
+    networks:
+      - api-network
+
+  db:
+    container_name: db
+    image: mysql:latest
+    ports:
+       - '3307:3306'
+    environment:
+      - MYSQL_DATABASE=${DB_DATABASE_NAME}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+    networks:
+      - api-network
+
+networks:
+  nova-software-network:
+    driver: bridge

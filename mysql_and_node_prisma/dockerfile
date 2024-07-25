@@ -1,0 +1,25 @@
+FROM node:18.18-alpine as build
+
+WORKDIR /usr/app
+
+COPY package.json package-lock.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN rm -rf dist
+RUN npm run build
+
+FROM node:18.18-alpine
+
+WORKDIR /usr/app
+
+COPY package.json package-lock.json ./
+
+RUN npm install --only=production
+
+COPY --from=build /usr/app/dist ./dist
+COPY . .
+
+CMD ["npm", "run", "start"]
